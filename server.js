@@ -5,7 +5,7 @@ const multer = require('multer');
 const pdfParse = require('pdf-parse');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;\nconst MAX_HISTORY = 10;
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '1mb' }));
@@ -84,7 +84,7 @@ app.post('/api/chat', limiter, async (req, res) => {
       return res.status(503).json({ error: 'AI provider is not configured.' });
 
     const validHistory = Array.isArray(history)
-      ? history.slice(-12).filter(m =>
+      ? history.slice(-MAX_HISTORY).filter(m =>
           m && ['user', 'assistant'].includes(m.role) &&
           typeof m.content === 'string' && m.content.length <= 12000
         )
@@ -105,7 +105,7 @@ app.post('/api/chat', limiter, async (req, res) => {
       body: JSON.stringify({
         model: process.env.AI_MODEL || 'gpt-4.1-mini',
         messages,
-        max_tokens: 1200
+        max_tokens: 1000
       })
     });
 
