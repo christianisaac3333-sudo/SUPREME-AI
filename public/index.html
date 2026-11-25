@@ -1,113 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080808">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080808">
 <title>SUPREME AI</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#080808;color:#eee;font-family:system-ui,-apple-system,sans-serif;height:100dvh;display:flex;flex-direction:column}
-header{padding:18px 20px;border-bottom:1px solid #242424;display:flex;align-items:center;justify-content:space-between}
-.logo{font-weight:900;letter-spacing:2px;color:#d9b65b;font-size:20px}
-.status{font-size:12px;color:#999}
-main{flex:1;overflow:auto;padding:20px;max-width:900px;width:100%;margin:auto}
-#welcome{text-align:center;margin-top:15vh}
-#welcome h1{font-size:clamp(30px,6vw,48px);margin-bottom:10px}
-.gold{color:#d9b65b}
-#welcome p{color:#888}
-#messages{display:flex;flex-direction:column;gap:18px}
-.msg{padding:15px 17px;border-radius:18px;max-width:90%;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
-.user{align-self:flex-end;background:#252525}
-.ai{align-self:flex-start;background:#121212;border:1px solid #262626}
-#composer{width:100%;max-width:900px;margin:auto;padding:12px 15px 20px}
-form{display:flex;gap:10px;background:#151515;border:1px solid #333;border-radius:22px;padding:10px}
-textarea{flex:1;background:transparent;color:white;border:0;outline:none;resize:none;font:inherit;max-height:150px;min-height:44px;padding:10px}
-button{background:#d9b65b;color:#090909;border:0;border-radius:15px;padding:12px 18px;font-weight:bold;cursor:pointer}
-button:disabled{opacity:.5}
-.small{text-align:center;color:#777;font-size:11px;padding-top:10px}
-#newchat{background:transparent;color:#d9b65b;border:1px solid #333}
+*{box-sizing:border-box}body{margin:0;background:#080808;color:#eee;font-family:system-ui,sans-serif;height:100dvh;display:flex;flex-direction:column}
+header{padding:15px;border-bottom:1px solid #222;display:flex;justify-content:space-between;align-items:center}.logo{color:#d9b65b;font-weight:900;letter-spacing:2px;font-size:19px}
+button,select{cursor:pointer}button{background:#d9b65b;color:#090909;border:0;border-radius:12px;padding:11px 15px;font-weight:700}select{background:#161616;color:#eee;border:1px solid #333;border-radius:12px;padding:12px}
+#toolbar{display:flex;gap:10px;padding:12px;flex-wrap:wrap}#toolbar select{flex:1;min-width:140px}#history{border:1px solid #333;background:transparent;color:#d9b65b}
+main{flex:1;overflow:auto;padding:18px;max-width:950px;width:100%;margin:auto}#welcome{text-align:center;margin-top:12vh}#welcome h1{font-size:clamp(30px,6vw,46px)}.gold{color:#d9b65b}#welcome p{color:#888}
+#messages{display:flex;flex-direction:column;gap:15px}.msg{padding:14px 16px;border-radius:18px;max-width:92%;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}.user{align-self:flex-end;background:#252525}.ai{align-self:flex-start;background:#121212;border:1px solid #262626}
+#composer{width:100%;max-width:950px;margin:auto;padding:12px 15px 20px}form{display:flex;gap:10px;background:#151515;border:1px solid #333;border-radius:22px;padding:10px}textarea{flex:1;background:transparent;color:white;border:0;outline:none;resize:none;font:inherit;max-height:140px;min-height:44px;padding:10px}
+.small{text-align:center;color:#777;font-size:11px;padding-top:10px}#historyPanel{display:none;padding:10px 15px;max-height:180px;overflow:auto;border-bottom:1px solid #333}.historyItem{display:block;width:100%;margin:5px 0;text-align:left;background:#171717;color:#eee}
 </style>
 </head>
 <body>
-<header>
-<div class="logo">♤ SUPREME AI</div>
-<button id="newchat" onclick="newChat()">New chat</button>
-</header>
-<main id="main">
-<div id="welcome">
-<h1>Welcome to <span class="gold">SUPREME AI</span></h1>
-<p>Your intelligent assistant.</p>
+<header><div class="logo">♤ SUPREME AI</div><button onclick="newChat()">＋ New chat</button></header>
+<div id="toolbar">
+<select id="mode"><option value="general">General assistant</option><option value="coding">Coding assistant</option><option value="learning">Learning assistant</option><option value="writing">Writing assistant</option><option value="creative">Creative assistant</option></select>
+<button id="history" onclick="toggleHistory()">History</button>
 </div>
-<div id="messages"></div>
-</main>
-<div id="composer">
-<form id="form">
-<textarea id="input" placeholder="Ask SUPREME AI anything..." rows="1"></textarea>
-<button id="send" type="submit">Send</button>
-</form>
-<div class="small">SUPREME AI · AI responses may contain errors</div>
-</div>
+<div id="historyPanel"></div>
+<main id="main"><div id="welcome"><h1>Welcome to <span class="gold">SUPREME AI</span></h1><p>Ask, learn, create and explore.</p></div><div id="messages"></div></main>
+<div id="composer"><form id="form"><textarea id="input" placeholder="Ask SUPREME AI anything..." rows="1"></textarea><button id="send">Send</button></form><div class="small">SUPREME AI · Responses may contain errors</div></div>
 <script>
-const form=document.getElementById('form');
-const input=document.getElementById('input');
-const messages=document.getElementById('messages');
-const welcome=document.getElementById('welcome');
-const main=document.getElementById('main');
-const send=document.getElementById('send');
-
-function addMessage(text,role){
-  const div=document.createElement('div');
-  div.className='msg '+role;
-  div.textContent=text;
-  messages.appendChild(div);
-  main.scrollTop=main.scrollHeight;
-  return div;
-}
-
+const form=document.getElementById('form'),input=document.getElementById('input'),messages=document.getElementById('messages'),welcome=document.getElementById('welcome'),main=document.getElementById('main'),send=document.getElementById('send'),mode=document.getElementById('mode'),historyPanel=document.getElementById('historyPanel');
+let current=[],chats=[];
+function addMessage(text,role){const div=document.createElement('div');div.className='msg '+role;div.textContent=text;messages.appendChild(div);main.scrollTop=main.scrollHeight;return div}
+function saveChat(){if(!current.length)return;chats.unshift({title:current.find(m=>m.role==='user')?.content.slice(0,60)||'Chat',messages:current.slice(),time:Date.now()});chats=chats.slice(0,30);try{localStorage.setItem('supremeChats',JSON.stringify(chats))}catch(e){}}
+function loadHistory(){try{chats=JSON.parse(localStorage.getItem('supremeChats')||'[]')}catch(e){chats=[]}historyPanel.innerHTML='';chats.forEach((chat,index)=>{const b=document.createElement('button');b.className='historyItem';b.textContent=chat.title||'Previous chat';b.onclick=()=>restoreChat(index);historyPanel.appendChild(b)})}
+function restoreChat(index){const chat=chats[index];if(!chat)return;current=chat.messages.slice();messages.innerHTML='';welcome.style.display='none';current.forEach(m=>addMessage(m.content,m.role==='assistant'?'ai':'user'));historyPanel.style.display='none'}
+function toggleHistory(){historyPanel.style.display=historyPanel.style.display==='block'?'none':'block';loadHistory()}
+function newChat(){saveChat();current=[];messages.innerHTML='';welcome.style.display='block';input.value='';loadHistory()}
 async function sendMessage(text){
-  if(!text.trim()||send.disabled)return;
-  welcome.style.display='none';
-  addMessage(text,'user');
-  input.value='';
-  send.disabled=true;
-  const thinking=addMessage('SUPREME AI is thinking...','ai');
-
-  try{
-    const res=await fetch('/api/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({message:text})
-    });
-    const data=await res.json();
-    thinking.textContent=data.reply||data.error||'No response received.';
-  }catch(e){
-    thinking.textContent='Unable to connect to the server. Please try again.';
-  }finally{
-    send.disabled=false;
-    input.focus();
-    main.scrollTop=main.scrollHeight;
-  }
+ if(!text.trim()||send.disabled)return;
+ welcome.style.display='none';
+ const selectedMode=mode.value,cleanText=text.trim();
+ addMessage(cleanText,'user');input.value='';send.disabled=true;
+ const thinking=addMessage('SUPREME AI is thinking...','ai');
+ const history=current.slice(-12).map(m=>({role:m.role,content:m.content}));
+ try{
+  const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:cleanText,mode:selectedMode,history})});
+  const data=await res.json();const reply=data.reply||data.error||'No response received.';
+  thinking.textContent=reply;current.push({role:'user',content:cleanText},{role:'assistant',content:reply});
+  saveChat();loadHistory();
+ }catch(e){thinking.textContent='Unable to connect to server. Please try again.'}
+ finally{send.disabled=false;input.focus();main.scrollTop=main.scrollHeight}
 }
-
-form.addEventListener('submit',e=>{
-  e.preventDefault();
-  sendMessage(input.value);
-});
-
-input.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&!e.shiftKey){
-    e.preventDefault();
-    form.requestSubmit();
-  }
-});
-
-function newChat(){
-  messages.innerHTML='';
-  welcome.style.display='block';
-  input.value='';
-  input.focus();
-}
+form.addEventListener('submit',e=>{e.preventDefault();sendMessage(input.value)});
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit()}});
+loadHistory();
 </script>
 </body>
 </html>
