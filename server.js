@@ -1,12 +1,22 @@
 const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const multer = require('multer');
+const pdfParse = require('pdf-parse');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static('public'));
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['text/plain', 'application/pdf'];
+    cb(allowed.includes(file.mimetype) ? null : new Error('Only TXT and PDF files are allowed.'), allowed.includes(file.mimetype));
+  }
+});
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -15,19 +25,9 @@ const limiter = rateLimit({
   legacyHeaders: false
 });
 
-const uploadLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 5
-});
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 }
-});
-
 const modes = {
   general: 'You are SUPREME AI, a helpful, accurate general assistant.',
-  coding: 'You are SUPREME AI, a programming assistant. Explain code clearly.',
+  coding: 'You are SUPREME AI, a programming tutor. Explain code clearly.',
   learning: 'You are SUPREME AI, a patient educational tutor.',
   writing: 'You are SUPREME AI, a writing and editing assistant.',
   creative: 'You are SUPREME AI, a creative brainstorming assistant.'
@@ -38,63 +38,61 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/api/config', (req, res) => {
-  res.json({
-    name: 'SUPREME AI',
-    modes: Object.keys(modes),
-    aiConfigured: Boolean(process.env.OPENAI_API_KEY),
-    uploads: true
-  });
+  res.json({ name: 'SUPREME AI', modes: Object.keys(modes), aiConfigured: Boolean(process.env.OPENAI_API_KEY) });
 });
 
-app.post('/api/upload', uploadLimiter, upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'Please upload a file.' });
-  }
+app.post('/api/upload', limiter, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Choose a TXT or PDF file.' });
 
-  const file = req.file;
-  const isText = file.mimetype === 'text/plain';
+    let content = '';
 
-  if (!isText) {
-    return res.status(415).json({
-      error: 'This upload foundation currently accepts plain text files only. PDF processing will be added separately.'
+    if (req.file.mimetype === 'application/pdf') {
+      const parsed = await pdfParse(req.file.buffer);
+      content = parsed.text;
+    } else {
+      content = req.file.buffer.toString('utf8');
+    }
+
+    content = content.trim();
+
+    if (!content) return res.status(400).json({ error: 'No readable text found in the file.' });
+
+    res.json({
+      filename: req.file.originalname.slice(0, 200),
+      content: content.slice(0, 30000)
     });
+  } catch (e) {
+    console.error('Upload error:', e.message);
+    res.status(400).json({ error: 'Unable to read this file.' });
   }
-
-  const content = file.buffer.toString('utf8');
-
-  res.json({
-    filename: file.originalname.slice(0, 150),
-    content: content.slice(0, 20000),
-    truncated: content.length > 20000,
-    size: file.size
-  });
 });
 
 app.post('/api/chat', limiter, async (req, res) => {
   try {
     const { message, mode = 'general', history = [] } = req.body || {};
 
-    if (typeof message !== 'string' || !message.trim()) {
+    if (typeof message !== 'string' || !message.trim())
       return res.status(400).json({ error: 'A message is required.' });
-    }
 
-    if (message.length > 12000) {
+    if (message.length > 30000)
       return res.status(400).json({ error: 'Message too long.' });
-    }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(503).json({
-        error: 'AI provider is not configured on the server yet.'
-      });
-    }
+    if (!process.env.OPENAI_API_KEY)
+      return res.status(503).json({ error: 'AI provider is not configured.' });
 
     const validHistory = Array.isArray(history)
       ? history.slice(-12).filter(m =>
           m && ['user', 'assistant'].includes(m.role) &&
-          typeof m.content === 'string' &&
-          m.content.length <= 12000
+          typeof m.content === 'string' && m.content.length <= 12000
         )
       : [];
+
+    const messages = [
+      { role: 'system', content: modes[mode] || modes.general },
+      ...validHistory,
+      { role: 'user', content: message.trim() }
+    ];
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -104,11 +102,7 @@ app.post('/api/chat', limiter, async (req, res) => {
       },
       body: JSON.stringify({
         model: process.env.AI_MODEL || 'gpt-4.1-mini',
-        messages: [
-          { role: 'system', content: modes[mode] || modes.general },
-          ...validHistory,
-          { role: 'user', content: message.trim() }
-        ],
+        messages,
         max_tokens: 1200
       })
     });
@@ -116,17 +110,19 @@ app.post('/api/chat', limiter, async (req, res) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Provider error status:', response.status);
+      console.error('Provider status:', response.status);
       return res.status(502).json({ error: 'AI provider request failed.' });
     }
 
-    res.json({
-      reply: data.choices?.[0]?.message?.content || 'No response received.'
-    });
-  } catch (error) {
-    console.error('Chat error:', error.message);
+    res.json({ reply: data.choices?.[0]?.message?.content || 'No response received.' });
+  } catch (e) {
+    console.error('Chat error:', e.message);
     res.status(500).json({ error: 'Internal server error.' });
   }
+});
+
+app.use((err, req, res, next) => {
+  res.status(400).json({ error: err.message || 'Request failed.' });
 });
 
 app.listen(port, '0.0.0.0', () => {
