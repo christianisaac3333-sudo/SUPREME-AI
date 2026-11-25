@@ -29,7 +29,7 @@ footer{text-align:center;color:#777;margin:20px;font-size:12px}
 <select id="mode">
 <option value="general">General</option><option value="coding">Coding</option><option value="learning">Learning</option><option value="writing">Writing</option><option value="creative">Creative</option>
 </select>
-<button onclick="restoreChat()">Restore saved</button>
+<button onclick="restoreChat()">Restore saved</button><button onclick="exportChat()">Export chat</button>
 </div>
 <div id="chat"></div>
 <div class="controls"><input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf"><button onclick="uploadFile()">Attach file</button></div>
@@ -83,6 +83,12 @@ async function send(){
   attachedText='';attachedName='';document.getElementById('fileinfo').textContent='';document.getElementById('file').value='';
  }catch(e){add('assistant','Error: '+e.message)}
  btn.disabled=false;
+}
+function exportChat(){
+ const data=history.map(m=>m.role.toUpperCase()+':\\n'+m.content).join('\\n\\n');
+ const blob=new Blob([data],{type:'text/plain'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='supreme-ai-chat.txt';a.click();
+ URL.revokeObjectURL(a.href);
 }
 function newChat(){
  history=[];chat.innerHTML='';attachedText='';attachedName='';
