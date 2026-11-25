@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SUPREME AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090909;color:#eee;font-family:Arial,sans-serif}
+header{padding:20px;border-bottom:1px solid #242424;color:#d4af37;font-size:24px;font-weight:bold}
+main{max-width:900px;margin:auto;padding:25px}
+.hero{text-align:center;padding:65px 15px}
+.hero h1{font-size:45px;margin:10px;color:#d4af37}
+.hero p{color:#999}
+#chat{min-height:250px;padding:20px;border:1px solid #292929;border-radius:15px;background:#111;margin-bottom:15px}
+.message{padding:12px;margin:10px 0;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.user{background:#252525}
+.ai{background:#171717;border:1px solid #333}
+form{display:flex;gap:10px}
+textarea{flex:1;background:#161616;color:white;border:1px solid #333;border-radius:12px;padding:15px;resize:vertical}
+button{background:#d4af37;border:0;padding:14px 22px;border-radius:12px;font-weight:bold}
+footer{text-align:center;color:#777;padding:35px}
+</style>
+</head>
+<body>
+<header>♤ SUPREME AI</header>
+<main>
+<section class="hero">
+<h1>SUPREME AI</h1>
+<p>One AI. Every capability. Worldwide.</p>
+</section>
+<div id="chat"><div class="message ai">Welcome to SUPREME AI. Your global AI workspace is beginning.</div></div>
+<form id="form">
+<textarea id="input" rows="2" placeholder="Ask SUPREME AI anything..." required></textarea>
+<button>Send</button>
+</form>
+<p id="status"></p>
+</main>
+<footer>♤ SUPREME AI · Built for the world</footer>
+<script>
+const form=document.getElementById('form');
+const input=document.getElementById('input');
+const chat=document.getElementById('chat');
+const status=document.getElementById('status');
+form.addEventListener('submit',async e=>{
+ e.preventDefault();
+ const text=input.value.trim();
+ if(!text)return;
+ const u=document.createElement('div');
+ u.className='message user';u.textContent=text;chat.appendChild(u);
+ input.value='';status.textContent='SUPREME AI is preparing...';
+ const a=document.createElement('div');a.className='message ai';
+ a.textContent='Your message has been received. The AI provider connection is not configured yet.';
+ chat.appendChild(a);status.textContent='';
+});
+</script>
+</body>
+</html>
