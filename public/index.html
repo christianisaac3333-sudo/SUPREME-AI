@@ -6,7 +6,7 @@
 <title>SUPREME AI</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#080808;color:#eee;font-family:Arial,sans-serif}
+body{margin:0;background:#080808;color:#eee;font-family:Arial,sans-serif} @media(max-width:600px){main{padding:8px}#chat{height:58vh;padding:8px}header{font-size:18px}.controls button,.controls select{padding:10px}textarea{min-width:100%;width:100%}}
 header{padding:16px;border-bottom:1px solid #292929;color:#d6b35b;font-weight:bold;font-size:22px;display:flex;justify-content:space-between}
 main{max-width:900px;margin:auto;padding:15px}
 #chat{height:62vh;overflow:auto;border:1px solid #252525;border-radius:12px;padding:15px}
@@ -32,7 +32,7 @@ footer{text-align:center;color:#777;margin:20px;font-size:12px}
 <button onclick="restoreChat()">Restore saved</button><button onclick="exportChat()">Export chat</button>
 </div>
 <div id="chat"></div>
-<div class="controls"><input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf"><button onclick="uploadFile()">Attach file</button></div>
+<div class="controls"><input id="file" type="file" accept=".txt,.pdf,.png,.jpg,.jpeg,.webp,text/plain,application/pdf,image/*"><button onclick="uploadFile()">Attach file</button></div>
 <div id="fileinfo"></div>
 <div class="controls"><textarea id="input" placeholder="Ask SUPREME AI anything..."></textarea><button id="sendBtn" onclick="send()">Send</button></div>
 </main>
