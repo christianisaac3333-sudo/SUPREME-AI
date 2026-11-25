@@ -9,7 +9,7 @@ const port = process.env.PORT || 3000;\nconst MAX_HISTORY = 10;
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '1mb' }));
-app.use(express.static('public'));
+app.use(express.static('public'));\napp.use('/api/auth', require('./auth-routes'));
 
 const upload = multer({
   storage: multer.memoryStorage(),
