@@ -7,125 +7,90 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#080808;color:#eee;font-family:Arial,sans-serif}
-header{padding:18px;border-bottom:1px solid #292929;color:#d6b35b;font-size:22px;font-weight:bold}
-main{max-width:850px;margin:auto;padding:18px}
-#chat{height:65vh;overflow:auto;border:1px solid #252525;border-radius:12px;padding:15px}
+header{padding:16px;border-bottom:1px solid #292929;color:#d6b35b;font-weight:bold;font-size:22px;display:flex;justify-content:space-between}
+main{max-width:900px;margin:auto;padding:15px}
+#chat{height:62vh;overflow:auto;border:1px solid #252525;border-radius:12px;padding:15px}
 .msg{padding:12px;margin:12px 0;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
 .user{background:#242424}
 .ai{background:#141414;border:1px solid #303030}
 .controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 textarea{flex:1;min-width:180px;min-height:65px;background:#171717;color:white;border:1px solid #333;border-radius:10px;padding:12px}
-button,select{background:#181818;color:#d6b35b;border:1px solid #444;padding:12px;border-radius:10px}
+button,select,input{background:#181818;color:#d6b35b;border:1px solid #444;padding:12px;border-radius:10px}
 button{cursor:pointer}
-button:hover{background:#292929}
+button:disabled{opacity:.5}
 #fileinfo{font-size:13px;color:#aaa;margin:8px}
-footer{color:#777;text-align:center;margin:20px;font-size:12px}
+footer{text-align:center;color:#777;margin:20px;font-size:12px}
 </style>
 </head>
 <body>
-<header>♤ SUPREME AI</header>
+<header><span>♤ SUPREME AI</span><button onclick="newChat()">＋ New chat</button></header>
 <main>
-<div style="display:flex;gap:10px;margin-bottom:12px">
+<div class="controls">
 <select id="mode">
-<option value="general">General</option>
-<option value="coding">Coding</option>
-<option value="learning">Learning</option>
-<option value="writing">Writing</option>
-<option value="creative">Creative</option>
+<option value="general">General</option><option value="coding">Coding</option><option value="learning">Learning</option><option value="writing">Writing</option><option value="creative">Creative</option>
 </select>
-<button onclick="newChat()">New chat</button>
+<button onclick="restoreChat()">Restore saved</button>
 </div>
 <div id="chat"></div>
+<div class="controls"><input id="file" type="file" accept=".txt,.pdf,text/plain,application/pdf"><button onclick="uploadFile()">Attach file</button></div>
 <div id="fileinfo"></div>
-<div class="controls">
-<input id="file" type="file" accept=".txt,text/plain">
-<button onclick="uploadFile()">Attach text</button>
-</div>
-<div class="controls">
-<textarea id="input" placeholder="Ask SUPREME AI anything..."></textarea>
-<button onclick="send()">Send</button>
-</div>
+<div class="controls"><textarea id="input" placeholder="Ask SUPREME AI anything..."></textarea><button id="sendBtn" onclick="send()">Send</button></div>
 </main>
-<footer>SUPREME AI • Powered by SUPREME DEV</footer>
+<footer>SUPREME AI • powered by SUPREME DEV</footer>
 <script>
-const chat=document.getElementById('chat');
-const input=document.getElementById('input');
-const mode=document.getElementById('mode');
-let history=[];
-let attachedText='';
-let attachedName='';
+const chat=document.getElementById('chat'),input=document.getElementById('input'),mode=document.getElementById('mode');
+let history=[],attachedText='',attachedName='';
 
+function save(){
+ try{localStorage.setItem('supreme_ai_history',JSON.stringify(history))}catch(e){}
+}
 function add(role,text){
- const div=document.createElement('div');
- div.className='msg '+(role==='user'?'user':'ai');
- div.textContent=(role==='user'?'You: ':'SUPREME AI: ')+text;
- chat.appendChild(div);
- chat.scrollTop=chat.scrollHeight;
+ const d=document.createElement('div');
+ d.className='msg '+(role==='user'?'user':'ai');
+ d.textContent=(role==='user'?'You: ':'SUPREME AI: ')+text;
+ chat.appendChild(d);chat.scrollTop=chat.scrollHeight;
 }
-
+function restoreChat(){
+ try{
+  history=JSON.parse(localStorage.getItem('supreme_ai_history')||'[]');
+  chat.innerHTML='';
+  history.forEach(m=>add(m.role,m.content));
+ }catch(e){alert('Saved chat could not be restored.')}
+}
 async function uploadFile(){
- const file=document.getElementById('file').files[0];
- if(!file){alert('Choose a text file first.');return}
- const form=new FormData();
- form.append('file',file);
- document.getElementById('fileinfo').textContent='Uploading...';
+ const f=document.getElementById('file').files[0];
+ if(!f)return alert('Choose a file first.');
+ const fd=new FormData();fd.append('file',f);
+ document.getElementById('fileinfo').textContent='Reading file...';
  try{
-  const r=await fetch('/api/upload',{method:'POST',body:form});
-  const data=await r.json();
-  if(!r.ok)throw new Error(data.error||'Upload failed');
-  attachedText=data.content;
-  attachedName=data.filename;
+  const r=await fetch('/api/upload',{method:'POST',body:fd}),d=await r.json();
+  if(!r.ok)throw Error(d.error||'Upload failed');
+  attachedText=d.content;attachedName=d.filename;
   document.getElementById('fileinfo').textContent='Attached: '+attachedName;
- }catch(e){
-  document.getElementById('fileinfo').textContent=e.message;
- }
+ }catch(e){document.getElementById('fileinfo').textContent=e.message}
 }
-
 async function send(){
- const text=input.value.trim();
- if(!text&&!attachedText)return;
- let message=text;
- if(attachedText){
-  message='Attached file: '+attachedName+'\n\nFile contents:\n'+attachedText+'\n\nUser question: '+text;
- }
- add('user',text+(attachedText?'\n[File: '+attachedName+']':''));
+ const text=input.value.trim();if(!text&&!attachedText)return;
+ const message=attachedText?'File: '+attachedName+'\n'+attachedText+'\nQuestion: '+text:text;
+ add('user',text+(attachedText?' [File: '+attachedName+']':''));
  input.value='';
- const sendBtn=document.querySelector('.controls:last-child button');
- sendBtn.disabled=true;
+ const btn=document.getElementById('sendBtn');btn.disabled=true;
  try{
-  const r=await fetch('/api/chat',{
-   method:'POST',
-   headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({message,mode:mode.value,history})
-  });
-  const data=await r.json();
-  if(!r.ok)throw new Error(data.error||'Request failed');
-  add('assistant',data.reply);
-  history.push({role:'user',content:message},{role:'assistant',content:data.reply});
-  history=history.slice(-12);
-  attachedText='';
-  attachedName='';
-  document.getElementById('fileinfo').textContent='';
-  document.getElementById('file').value='';
+  const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,mode:mode.value,history})});
+  const d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');
+  add('assistant',d.reply);history.push({role:'user',content:message},{role:'assistant',content:d.reply});
+  history=history.slice(-20);save();
+  attachedText='';attachedName='';document.getElementById('fileinfo').textContent='';document.getElementById('file').value='';
  }catch(e){add('assistant','Error: '+e.message)}
- sendBtn.disabled=false;
+ btn.disabled=false;
 }
-
 function newChat(){
- history=[];
- chat.innerHTML='';
- attachedText='';
- attachedName='';
- document.getElementById('fileinfo').textContent='';
- document.getElementById('file').value='';
+ history=[];chat.innerHTML='';attachedText='';attachedName='';
+ document.getElementById('fileinfo').textContent='';document.getElementById('file').value='';
+ save();
 }
-
-input.addEventListener('keydown',e=>{
- if(e.key==='Enter'&&!e.shiftKey){
-  e.preventDefault();
-  send();
- }
-});
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+restoreChat();
 </script>
 </body>
 </html>
